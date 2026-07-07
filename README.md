@@ -20,11 +20,16 @@ npm test
 ```
 
 ## Workshop Task
-Edit `.github/workflows/ci.yml` to implement one optimisation:
+Open this repo in VS Code with GitHub Copilot in **agent mode** and use the workshop prompt
+cards. The discipline: the agent designs first (no file edits), your team approves the design,
+then the agent implements it on a branch and you review its diff before it commits.
+
+Optimisation categories (pick exactly one):
 1. Add dependency caching via `actions/setup-node` cache option.
 2. Split tests across matrix shards.
 3. Reuse build artifacts.
 4. Add path-based selective execution.
 5. Fix the flaky integration test (its root cause is in `scripts/test.js`, and it is fixable).
 
-Compare your work against `.github/workflows/ci.optimized.example.yml` after the lab.
+You push and open the pull request yourself — the agent does not ship its own work.
+Compare the result against `.github/workflows/ci.optimized.example.yml` after the lab.
