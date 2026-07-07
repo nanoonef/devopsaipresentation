@@ -23,10 +23,10 @@ jobs:
     # Timeout prevents stalled jobs from consuming runner time indefinitely.
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           # Built-in npm caching reduces repeated dependency download time.
           cache: npm
       - name: Install dependencies
@@ -49,7 +49,7 @@ jobs:
       risk_score: ${{ steps.score.outputs.risk_score }}
       decision: ${{ steps.score.outputs.decision }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - id: changed_paths
         uses: dorny/paths-filter@v3
         with:
@@ -103,10 +103,10 @@ jobs:
         # Matrix strategy is the example optimisation for parallel test execution.
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - name: Install dependencies
         run: npm ci
