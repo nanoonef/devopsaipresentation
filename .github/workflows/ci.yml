@@ -24,6 +24,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          # Lab 3 optimisation: cache npm dependencies between runs.
+          cache: npm
       # No dependency cache is configured here, so each run pays the full install cost.
       - name: Install dependencies
         run: npm ci
@@ -41,6 +43,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          # Lab 3 optimisation: cache npm dependencies between runs.
+          cache: npm
       # Dependencies are installed again, which duplicates work across jobs.
       - name: Install dependencies
         run: npm ci
