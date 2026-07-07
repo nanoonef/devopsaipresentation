@@ -1,0 +1,157 @@
+name: ci-lab-optimized-example
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Limit token scope so the workflow only gets the minimum repository access it needs.
+permissions:
+  contents: read
+
+# Cancel older runs on the same branch so CI minutes are not wasted on obsolete commits.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Timeout prevents stalled jobs from consuming runner time indefinitely.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          # Built-in npm caching reduces repeated dependency download time.
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # Preserve build output so downstream jobs can reuse it instead of rebuilding.
+          name: build-output
+          path: .
+
+  risk_assessment:
+    # Risk scoring runs only for pull requests because it relies on PR metadata.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    outputs:
+      risk_score: ${{ steps.score.outputs.risk_score }}
+      decision: ${{ steps.score.outputs.decision }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: changed_paths
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            workflow:
+              - '.github/workflows/**'
+            app_logic:
+              - 'scripts/**'
+              - 'package*.json'
+      - id: score
+        name: Calculate deployment risk score
+        run: |
+          score=4
+
+          if [[ "${{ steps.changed_paths.outputs.workflow }}" == "true" ]]; then
+            score=$((score + 4))
+          fi
+
+          if [[ "${{ steps.changed_paths.outputs.app_logic }}" == "true" ]]; then
+            score=$((score + 2))
+          fi
+
+          if [[ "${{ github.event.pull_request.changed_files }}" -gt 20 ]]; then
+            score=$((score + 2))
+          fi
+
+          if [[ "$score" -ge 15 ]]; then
+            decision="no-go"
+          elif [[ "$score" -ge 9 ]]; then
+            decision="senior-review"
+          else
+            decision="normal-review"
+          fi
+
+          echo "risk_score=$score" >> "$GITHUB_OUTPUT"
+          echo "decision=$decision" >> "$GITHUB_OUTPUT"
+      - name: Publish risk summary
+        run: |
+          echo "Risk score: ${{ steps.score.outputs.risk_score }}"
+          echo "Decision: ${{ steps.score.outputs.decision }}"
+
+  test:
+    runs-on: ubuntu-latest
+    # Test waits for build so it can consume the artifact produced above.
+    needs: build
+    timeout-minutes: 10
+    strategy:
+      # Keep other shards running so participants can see the full failure picture.
+      fail-fast: false
+      matrix:
+        # Matrix strategy is the example optimisation for parallel test execution.
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: .
+      - name: Run tests (simulated shard)
+        run: npm test
+        env:
+          # Enable intermittent failures only in CI so the workshop can discuss flaky behaviour.
+          SIMULATE_FLAKY: "1"
+          # Set a higher failure probability to make flaky behaviour easier to observe live.
+          SIMULATE_FLAKY_RATE: "0.45"
+
+  # Guardrails example for Lab 4:
+  # - Runs only on pull requests.
+  # - Requires build and test to pass first.
+  # - Uses an environment gate (configure required reviewers in repo settings).
+  deploy_preview_guarded:
+    # Keep preview-style deployment checks off direct pushes to main.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs: [build, test, risk_assessment]
+    timeout-minutes: 5
+    environment:
+      # Environment protection rules are where manual approval reviewers are enforced.
+      name: workshop-preview
+    steps:
+      - name: Block no-go risk levels
+        if: needs.risk_assessment.outputs.decision == 'no-go'
+        run: |
+          echo "Risk score ${{ needs.risk_assessment.outputs.risk_score }} is no-go."
+          echo "Apply mitigations, then rerun validation."
+          exit 1
+      - name: Require explicit senior approval label for elevated risk
+        if: needs.risk_assessment.outputs.decision == 'senior-review'
+        run: |
+          labels='${{ join(github.event.pull_request.labels.*.name, ',') }}'
+          echo "Current labels: $labels"
+          if [[ ",$labels," != *",senior-approved,"* ]]; then
+            echo "Missing required label: senior-approved"
+            exit 1
+          fi
+      - name: Approval and rollback notes
+        run: |
+          echo "Guardrail check passed after build+test."
+          echo "Risk score: ${{ needs.risk_assessment.outputs.risk_score }}"
+          echo "Decision: ${{ needs.risk_assessment.outputs.decision }}"
+          echo "Rollback: revert the CI optimisation commit and rerun pipeline."
