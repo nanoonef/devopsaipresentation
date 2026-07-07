@@ -123,7 +123,7 @@ jobs:
           # Moderate failure probability keeps flaky behaviour observable without constant red builds.
           SIMULATE_FLAKY_RATE: "0.3"
 
-  # Guardrails example for Lab 4:
+  # Guardrails example for Lab 4 (see Lab 4 in the participant guide):
   # - Runs only on pull requests.
   # - Requires build and test to pass first.
   # - Uses an environment gate (configure required reviewers in repo settings).
