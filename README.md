@@ -25,5 +25,6 @@ Edit `.github/workflows/ci.yml` to implement one optimisation:
 2. Split tests across matrix shards.
 3. Reuse build artifacts.
 4. Add path-based selective execution.
+5. Fix the flaky integration test (its root cause is in `scripts/test.js`, and it is fixable).
 
 Compare your work against `.github/workflows/ci.optimized.example.yml` after the lab.
