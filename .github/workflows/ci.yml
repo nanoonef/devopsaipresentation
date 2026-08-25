@@ -47,8 +47,3 @@ jobs:
       # Tests run in a single job with no sharding, so duration improvement is possible.
       - name: Run tests
         run: npm test
-        env:
-          # Flaky mode is enabled in CI so teams have a realistic reliability issue to discuss.
-          SIMULATE_FLAKY: "1"
-          # Moderate failure probability keeps the flaky scenario observable without constant red builds.
-          SIMULATE_FLAKY_RATE: "0.3"
