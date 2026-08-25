@@ -20,9 +20,7 @@ git remote add origin https://github.com/YOUR-USERNAME/devopsaipresentation.git
 git push -u origin main
 ```
 
-3. Open your repo's **Actions** tab and confirm the `ci-lab` workflow ran. If the test job
-   failed with "service on port 8080 was not ready", rerun it once — that intermittent
-   failure is part of the workshop. You are set up when build passes and a rerun goes green.
+3. Open your repo's **Actions** tab and confirm the `ci-lab` workflow passed on your push.
 4. Validate locally: `npm ci && npm run build && npm test`.
 5. Open the repo in VS Code with GitHub Copilot signed in and confirm **agent mode** works
    (Copilot Chat -> Agent).
@@ -54,7 +52,6 @@ Optimisation categories (pick exactly one):
 2. Split tests across matrix shards.
 3. Reuse build artifacts.
 4. Add path-based selective execution.
-5. Fix the flaky integration test (its root cause is in `scripts/test.js`, and it is fixable).
 
 You push and open the pull request yourself — the agent does not ship its own work.
 Compare the result against `.github/workflows/ci.optimized.example.yml` after the lab.

@@ -117,11 +117,6 @@ jobs:
           path: .
       - name: Run tests (simulated shard)
         run: npm test
-        env:
-          # Enable intermittent failures only in CI so the workshop can discuss flaky behaviour.
-          SIMULATE_FLAKY: "1"
-          # Moderate failure probability keeps flaky behaviour observable without constant red builds.
-          SIMULATE_FLAKY_RATE: "0.3"
 
   # Guardrails example for Lab 4:
   # - Runs only on pull requests.
