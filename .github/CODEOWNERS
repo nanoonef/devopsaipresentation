@@ -6,5 +6,9 @@
 #
 # Later matches take precedence over earlier ones, so the blanket rule below can be
 # narrowed by adding more specific paths underneath it if needed.
+#
+# WORKSHOP PARTICIPANTS: if this file arrived in your own copy of the repo (via fork or
+# clone-and-push), replace @nanoonef below with your own GitHub username first. Otherwise
+# every PR you open will wait forever for an approval only the original owner can give.
 
 *  @nanoonef
