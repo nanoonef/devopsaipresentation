@@ -128,6 +128,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, test, risk_assessment]
     timeout-minutes: 5
+    # Read-only access to PR review state, just enough for the `gh pr view` check below.
+    permissions:
+      pull-requests: read
     environment:
       # Environment protection rules are where manual approval reviewers are enforced.
       name: workshop-preview
@@ -138,13 +141,20 @@ jobs:
           echo "Risk score ${{ needs.risk_assessment.outputs.risk_score }} is no-go."
           echo "Apply mitigations, then rerun validation."
           exit 1
-      - name: Require explicit senior approval label for elevated risk
+      - name: Require code owner (senior) approval for elevated risk
         if: needs.risk_assessment.outputs.decision == 'senior-review'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          labels='${{ join(github.event.pull_request.labels.*.name, ',') }}'
-          echo "Current labels: $labels"
-          if [[ ",$labels," != *",senior-approved,"* ]]; then
-            echo "Missing required label: senior-approved"
+          # reviewDecision reflects branch protection's required-reviews state, including
+          # "Require review from Code Owners" — so this only reads APPROVED once one of the
+          # senior developers listed in .github/CODEOWNERS has approved the pull request.
+          decision=$(gh pr view "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --json reviewDecision -q .reviewDecision)
+          echo "Review decision: $decision"
+          if [[ "$decision" != "APPROVED" ]]; then
+            echo "Missing required senior (code owner) approval"
             exit 1
           fi
       - name: Approval and rollback notes

@@ -1,0 +1,10 @@
+# Code owners for this repository.
+# These accounts stand in as the "senior developers" for the workshop guardrail exercise
+# (see PARTICIPANT_GUARDRAILS_GUIDE.md, Step 2 and Step 5). Any pull request must get an
+# approving review from one of them once "Require review from Code Owners" is enabled
+# under Settings -> Branches -> main.
+#
+# Later matches take precedence over earlier ones, so the blanket rule below can be
+# narrowed by adding more specific paths underneath it if needed.
+
+*  @nanoonef
