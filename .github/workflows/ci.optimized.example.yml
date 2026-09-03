@@ -65,15 +65,15 @@ jobs:
           score=4
 
           if [[ "${{ steps.changed_paths.outputs.workflow }}" == "true" ]]; then
-            score=$((score + 4))
+            score=$((score + 7))
           fi
 
           if [[ "${{ steps.changed_paths.outputs.app_logic }}" == "true" ]]; then
-            score=$((score + 2))
+            score=$((score + 5))
           fi
 
-          if [[ "${{ github.event.pull_request.changed_files }}" -gt 20 ]]; then
-            score=$((score + 2))
+          if [[ "${{ github.event.pull_request.changed_files }}" -gt 5 ]]; then
+            score=$((score + 4))
           fi
 
           if [[ "$score" -ge 15 ]]; then
