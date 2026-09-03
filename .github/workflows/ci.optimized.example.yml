@@ -40,6 +40,33 @@ jobs:
           name: build-output
           path: .
 
+  test:
+    runs-on: ubuntu-latest
+    # Test waits for build so it can consume the artifact produced above.
+    needs: build
+    timeout-minutes: 10
+    strategy:
+      # Keep other shards running so participants can see the full failure picture.
+      fail-fast: false
+      matrix:
+        # Matrix strategy is the example optimisation for parallel test execution.
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: .
+      - name: Run tests (simulated shard)
+        run: npm test
+
   risk_assessment:
     # Risk scoring runs only for pull requests because it relies on PR metadata.
     if: github.event_name == 'pull_request'
@@ -73,7 +100,7 @@ jobs:
           fi
 
           if [[ "${{ github.event.pull_request.changed_files }}" -gt 20 ]]; then
-            score=$((score + 2))
+            score=$((score + 4))
           fi
 
           if [[ "$score" -ge 15 ]]; then
@@ -90,34 +117,7 @@ jobs:
         run: |
           echo "Risk score: ${{ steps.score.outputs.risk_score }}"
           echo "Decision: ${{ steps.score.outputs.decision }}"
-
-  test:
-    runs-on: ubuntu-latest
-    # Test waits for build so it can consume the artifact produced above.
-    needs: build
-    timeout-minutes: 10
-    strategy:
-      # Keep other shards running so participants can see the full failure picture.
-      fail-fast: false
-      matrix:
-        # Matrix strategy is the example optimisation for parallel test execution.
-        shard: [1, 2]
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-          path: .
-      - name: Run tests (simulated shard)
-        run: npm test
-
+  
   # Guardrails example for Lab 4:
   # - Runs only on pull requests.
   # - Requires build and test to pass first.
@@ -131,10 +131,8 @@ jobs:
     # Read-only access to PR review state, just enough for the `gh pr view` check below.
     permissions:
       pull-requests: read
-    environment:
-      # Environment protection rules are where manual approval reviewers are enforced.
-      name: workshop-preview
     steps:
+      - uses: actions/checkout@v5
       - name: Block no-go risk levels
         if: needs.risk_assessment.outputs.decision == 'no-go'
         run: |
@@ -146,16 +144,33 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # reviewDecision reflects branch protection's required-reviews state, including
-          # "Require review from Code Owners" — so this only reads APPROVED once one of the
-          # senior developers listed in .github/CODEOWNERS has approved the pull request.
-          decision=$(gh pr view "${{ github.event.pull_request.number }}" \
+          # This check is self-contained: it does not rely on branch protection's
+          # "Require review from Code Owners" setting (which, if enabled, would apply
+          # to every PR regardless of risk band). Instead it reads .github/CODEOWNERS
+          # directly and checks whether any of those accounts left an APPROVED review
+          # on this specific PR, so normal-review PRs remain unaffected.
+          owners=$(grep -E '^\*\s' .github/CODEOWNERS | awk '{ $1=""; print }' | tr -d '@' | xargs -n1)
+          echo "Code owners: $owners"
+
+          approved_by=$(gh pr view "${{ github.event.pull_request.number }}" \
             --repo "${{ github.repository }}" \
-            --json reviewDecision -q .reviewDecision)
-          echo "Review decision: $decision"
-          if [[ "$decision" != "APPROVED" ]]; then
-            echo "Missing required senior (code owner) approval"
+            --json reviews \
+            -q '[.reviews[] | select(.state=="APPROVED") | .author.login] | unique | .[]')
+          echo "Approved by: $approved_by"
+
+          match=""
+          for owner in $owners; do
+            if grep -qx "$owner" <<< "$approved_by"; then
+              match="$owner"
+              break
+            fi
+          done
+
+          if [[ -z "$match" ]]; then
+            echo "Missing required senior (code owner) approval from: $owners"
             exit 1
+          else
+            echo "Approved by code owner: $match"
           fi
       - name: Approval and rollback notes
         run: |
@@ -163,3 +178,4 @@ jobs:
           echo "Risk score: ${{ needs.risk_assessment.outputs.risk_score }}"
           echo "Decision: ${{ needs.risk_assessment.outputs.decision }}"
           echo "Rollback: revert the CI optimisation commit and rerun pipeline."
+ 
