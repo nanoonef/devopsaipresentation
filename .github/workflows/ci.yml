@@ -35,6 +35,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    # Test depends on build, but the workflow does not reuse a build artifact.
+    needs: build
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
