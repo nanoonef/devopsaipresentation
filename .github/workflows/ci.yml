@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      # No dependency cache is configured here, so each run pays the full install cost.
+          cache: npm
       - name: Install dependencies
         run: npm ci
       - name: Lint
@@ -42,7 +42,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      # Dependencies are installed again, which duplicates work across jobs.
+          cache: npm
       - name: Install dependencies
         run: npm ci
       # Tests run in a single job with no sharding, so duration improvement is possible.
