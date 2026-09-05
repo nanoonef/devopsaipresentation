@@ -35,8 +35,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    # Test depends on build, but the workflow does not reuse a build artifact.
-    needs: build
+    # Runs in parallel with build: test does not consume build's output, so the
+    # artificial `needs: build` dependency only added serial wait time.
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
