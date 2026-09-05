@@ -6,7 +6,7 @@ This project is intentionally simple so participants can focus on pipeline impro
 
 You will work in **your own copy** of this repository — you need admin rights on it for the
 guardrails lab. Do not fork (forks have Actions disabled by default and their pull requests
-target this repo instead of yours). Instead:
+target this repo instead of yours). Instead :
 
 1. Create an empty **public** repository named `devopsaipresentation` under your own account
    (public is required for branch protection on a free account).
