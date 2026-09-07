@@ -42,9 +42,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
+      # scripts/test.js has no `require()` of any npm package (verified by static
+      # read of the file), so installing dependencies here was pure wasted time.
       # Tests run in a single job with no sharding, so duration improvement is possible.
       - name: Run tests
         run: npm test
